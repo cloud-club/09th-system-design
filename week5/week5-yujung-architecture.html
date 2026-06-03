@@ -1,0 +1,297 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>FabGuard 제조 설비 이벤트 수집 및 이상 탐지 아키텍처</title>
+  <style>
+    :root {
+      --bg: #f6f7f9;
+      --panel: #ffffff;
+      --ink: #1f2933;
+      --muted: #667085;
+      --line: #d7dce3;
+      --blue: #2563eb;
+      --green: #0f766e;
+      --amber: #b45309;
+      --red: #b42318;
+      --violet: #5b21b6;
+      font-family: Pretendard, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      line-height: 1.55;
+    }
+
+    main {
+      max-width: 1320px;
+      margin: 0 auto;
+      padding: 32px;
+    }
+
+    header { margin-bottom: 24px; }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: 28px;
+      letter-spacing: 0;
+    }
+
+    .lead {
+      margin: 0;
+      color: var(--muted);
+      font-size: 15px;
+      max-width: 1050px;
+    }
+
+    section.block { margin-top: 32px; }
+
+    .section-head {
+      display: flex;
+      align-items: baseline;
+      gap: 12px;
+      margin-bottom: 8px;
+    }
+
+    .section-num {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      background: var(--ink);
+      color: #fff;
+      font-size: 13px;
+      font-weight: 800;
+      flex-shrink: 0;
+    }
+
+    h2 {
+      margin: 0;
+      font-size: 20px;
+    }
+
+    .section-lead {
+      margin: 0 0 14px;
+      color: var(--muted);
+      font-size: 14px;
+      max-width: 980px;
+    }
+
+    .svgPreview,
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: 0 1px 2px rgba(16, 24, 40, 0.05);
+    }
+
+    .svgPreview { padding: 14px; }
+
+    .svgPreview img {
+      display: block;
+      width: 100%;
+      height: auto;
+      border-radius: 6px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .card {
+      padding: 16px;
+    }
+
+    .card h3 {
+      margin: 0 0 8px;
+      font-size: 15px;
+    }
+
+    .card p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 999px;
+      padding: 3px 9px;
+      font-size: 11px;
+      font-weight: 800;
+      margin-bottom: 10px;
+    }
+
+    .pill.amber { background: #fef3c7; color: var(--amber); }
+    .pill.blue { background: #dbeafe; color: var(--blue); }
+    .pill.green { background: #d1fae5; color: var(--green); }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    th, td {
+      padding: 10px 8px;
+      border-bottom: 1px solid #eef0f3;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      color: #475467;
+      background: #f9fafb;
+      font-weight: 800;
+    }
+
+    code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 12px;
+      background: #f2f4f7;
+      padding: 2px 5px;
+      border-radius: 4px;
+    }
+
+    .note {
+      border-left: 4px solid var(--blue);
+      background: #eff6ff;
+      color: #1e3a8a;
+      border-radius: 6px;
+      padding: 12px 14px;
+      font-size: 14px;
+      margin-top: 14px;
+    }
+
+    @media (max-width: 900px) {
+      main { padding: 20px; }
+      .grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <h1>FabGuard 제조 설비 이벤트 수집 및 이상 탐지 아키텍처</h1>
+      <p class="lead">
+        반도체 Fab의 Chamber 센서 데이터와 장비 로그를 Edge Gateway에서 수집하고 Kafka, Flink, 시계열 저장소, 알림 시스템으로 연결한다.
+        핵심 질문은 <strong>장애가 났을 때 데이터가 어디에 남아 있고, 어디서부터 다시 처리할 수 있는가</strong>이다.
+      </p>
+    </header>
+
+    <section class="block">
+      <div class="section-head">
+        <span class="section-num">1</span>
+        <h2>전체 아키텍처</h2>
+      </div>
+      <p class="section-lead">
+        Factory/Edge, Ingestion, Stream Processing, Storage, Output을 분리하고 Kafka 이전/이후의 복구 기준을 명확히 표시했다.
+      </p>
+      <div class="svgPreview" aria-label="FabGuard 아키텍처 SVG 다이어그램">
+        <img src="images/week5-yujung-architecture.svg" alt="FabGuard 제조 설비 이벤트 수집 및 이상 탐지 아키텍처" />
+      </div>
+    </section>
+
+    <section class="block">
+      <div class="section-head">
+        <span class="section-num">2</span>
+        <h2>발표 핵심</h2>
+      </div>
+      <p class="section-lead">
+        week5 선택 질문은 장애 복구 및 재처리 구조다. 아래 세 가지 기준을 말하면 아키텍처의 의도가 선명해진다.
+      </p>
+      <div class="grid">
+        <article class="card">
+          <span class="pill amber">Kafka 이전</span>
+          <h3>Edge local buffer가 마지막 방어선</h3>
+          <p>
+            Kafka에 들어오기 전 유실은 offset으로 복구할 수 없다.
+            그래서 Edge Gateway가 local disk buffer, <code>sequenceNo</code>, <code>eventId</code>를 가진다.
+          </p>
+        </article>
+        <article class="card">
+          <span class="pill blue">Kafka 이후</span>
+          <h3>Offset과 checkpoint가 복구 기준</h3>
+          <p>
+            Kafka 이후는 topic offset과 Flink checkpoint/savepoint로 다시 처리한다.
+            장애 후 마지막 성공 checkpoint부터 state와 offset을 함께 복구한다.
+          </p>
+        </article>
+        <article class="card">
+          <span class="pill green">Sink 재처리</span>
+          <h3>중복은 허용하고 idempotent하게 정리</h3>
+          <p>
+            at-least-once 처리는 같은 이벤트를 두 번 쓸 수 있다.
+            저장소는 <code>eventId</code>, window key, <code>anomalyId</code>로 중복을 제거한다.
+          </p>
+        </article>
+      </div>
+      <div class="note">
+        한 문장 요약: Kafka 이전은 Edge local buffer와 sequence number가 지키고, Kafka 이후는 offset, Flink checkpoint, idempotent sink가 지킨다.
+      </div>
+    </section>
+
+    <section class="block">
+      <div class="section-head">
+        <span class="section-num">3</span>
+        <h2>장애 지점별 복구</h2>
+      </div>
+      <p class="section-lead">어떤 장애가 났을 때 데이터가 남아 있는 위치와 재처리 기준을 분리해 둔다.</p>
+      <div class="card">
+        <table>
+          <thead>
+            <tr>
+              <th>장애 지점</th>
+              <th>데이터가 남는 곳</th>
+              <th>복구 방식</th>
+              <th>중복 처리</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Edge → Collector 단절</td>
+              <td>Edge local disk buffer</td>
+              <td>연결 복구 후 sequence 순서대로 재전송</td>
+              <td><code>eventId</code> dedup</td>
+            </tr>
+            <tr>
+              <td>Collector 장애</td>
+              <td>Edge buffer / retry queue</td>
+              <td>다른 Collector로 failover</td>
+              <td>Kafka key + <code>eventId</code></td>
+            </tr>
+            <tr>
+              <td>Flink Job 장애</td>
+              <td>Kafka topic + Flink checkpoint</td>
+              <td>마지막 checkpoint부터 state와 offset 복구</td>
+              <td>sink idempotency</td>
+            </tr>
+            <tr>
+              <td>TSDB sink 장애</td>
+              <td>Kafka/Flink checkpoint</td>
+              <td>sink 복구 후 checkpoint 이전부터 재처리</td>
+              <td><code>eventId</code> 또는 window key upsert</td>
+            </tr>
+            <tr>
+              <td>Schema 오류</td>
+              <td>DLQ topic</td>
+              <td>schema/mapping 수정 후 replay</td>
+              <td>원본 <code>eventId</code> 유지</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

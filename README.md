@@ -93,6 +93,15 @@
       <sub>스터디원</sub>
     </td>
     <td align="center">
+      <a href="https://github.com/jud1thDev">
+        <img src="https://github.com/jud1thDev.png" width="100px;" alt="정유정"/>
+        <br />
+        <sub><b>정유정</b></sub>
+      </a>
+      <br />
+      <sub>스터디원</sub>
+    </td>
+    <td align="center">
       <a href="https://github.com/wsxchoi">
         <img src="https://avatars.githubusercontent.com/wsxchoi" width="100px;" alt="최우성"/>
         <br />

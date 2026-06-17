@@ -170,8 +170,10 @@
 ---
 
 ## 개략적 아키텍처 다이어그램
+<p align="center">
+  <img src="images/week7-minsub-img.png" width="50%" height="70%">
+</p>
 
-![arch img](images/week7-minsub-img.png)
 
 ---
 
